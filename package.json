@@ -1,0 +1,7 @@
+{
+  "name": "recast", "version": "0.1.0", "private": true, "type": "module",
+  "engines": {"node": ">=24"},
+  "scripts": {"dev": "tsx server/index.ts", "start": "tsx server/index.ts", "build": "vite build", "check": "tsc --noEmit", "test": "tsx --test tests/*.test.ts", "invite": "tsx scripts/invite.ts"},
+  "dependencies": {"@comfyorg/sdk": ">=0.4.0", "dotenv": "^17.2.3", "express": "^5.1.0", "express-rate-limit": "^8.2.1", "helmet": "^8.1.0", "multer": "^2.0.2", "stripe": "^19.1.0", "react": "^19.2.0", "react-dom": "^19.2.0", "lucide-react": "^0.468.0", "zod": "^4.1.12", "ffmpeg-static": "^5.2.0", "ffprobe-static": "^3.1.0"},
+  "devDependencies": {"@types/express": "^5.0.5", "@types/multer": "^2.0.0", "@types/node": "^24.10.0", "@types/react": "^19.2.2", "@types/react-dom": "^19.2.2", "typescript": "^5.9.3", "tsx": "^4.20.6", "vite": "^7.2.2"}
+}

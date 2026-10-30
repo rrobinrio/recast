@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: recast
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    numInstances: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: RECAST_DATA_DIR
+        value: /data
+      - key: RECAST_ENV_PATH
+        value: /etc/secrets/recast.env
+    disk:
+      name: recast-private-data
+      mountPath: /data
+      sizeGB: 10
