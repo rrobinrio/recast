@@ -1,0 +1,7 @@
+const token=location.hash.slice(1)||sessionStorage.getItem('recast-setup')||'';
+if(token)sessionStorage.setItem('recast-setup',token);
+history.replaceState(null,'',location.pathname);
+const status=document.getElementById('status'),button=document.getElementById('save'),field=document.getElementById('key');
+async function request(body){const r=await fetch('/api/local-setup',{method:body?'POST':'GET',headers:{'Content-Type':'application/json','X-Recast-Setup':token},body:body?JSON.stringify(body):undefined,cache:'no-store'});const result=await r.json();if(!r.ok)throw Error(result.error||'Unable to save.');return result;}
+request().then(r=>{status.textContent=r.configured?'A Comfy key is already saved.':`Ready for your key. HTTPS media connection: ${r.mediaConfigured?'configured':'pending'}.`;if(r.configured)button.disabled=true;}).catch(e=>{status.textContent=e.message;status.className='status error';button.disabled=true;});
+document.getElementById('setup-form').addEventListener('submit',async e=>{e.preventDefault();button.disabled=true;try{await request({key:field.value});field.value='';sessionStorage.removeItem('recast-setup');status.textContent='Saved locally. Your app can now use the Comfy key. Return to Recast to upload your test video.';status.className='status good';button.textContent='Key saved';}catch(error){status.textContent=error.message;status.className='status error';button.disabled=false;}});
