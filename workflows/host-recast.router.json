@@ -1,0 +1,43 @@
+{
+  "name": "Recast consented host transformation",
+  "version": 4,
+  "engine": "Comfy Router",
+  "sdk": "@comfyorg/sdk >=0.4.0 (validated with 0.5.0)",
+  "model": "higgsfield/higgsfield-genjutsu-motion-transfer-v1.0",
+  "documentation": "https://api.comfy.org/v2/models/higgsfield/higgsfield-genjutsu-motion-transfer-v1.0/openapi.json",
+  "implementation": "server/pipeline.ts: buildRequest",
+  "input": {
+    "source": "One permission-cleared video, 4–30 seconds, with audio",
+    "photos": "1–3 consented reference photos including the full body and desired outfit",
+    "voice": "Not sent. Original soundtrack retained.",
+    "host": "Precise description of the person to replace",
+    "usage": "Seller's authorized uses",
+    "seed": "Not supported by the Router model schema"
+  },
+  "delivery": {
+    "submit": "comfy.models.submit(model, body, { idempotencyKey })",
+    "persist": [
+      "model",
+      "request_id",
+      "idempotency",
+      "body",
+      "snapshot"
+    ],
+    "resume": "comfy.models.handle(model, requestId)",
+    "poll": "handle.status() respecting retryAfterMs",
+    "terminal_error": "Check errorType even if status is COMPLETED",
+    "collect": "handle.get(); require kind=json, status=completed; read data.video.url",
+    "download": "Immediately save and probe the video in private storage"
+  },
+  "parameters": {
+    "resolution": "720p"
+  },
+  "limitations": [
+    "Genjutsu synthesizes video. Single-person replacement, reference clothing and scene preservation are prompt instructions, not guaranteed controls.",
+    "The Router schema exposes no tracked person mask or per-person lock.",
+    "Existing outputs are preserved; regeneration creates a new version from the full original, never from a prior crop.",
+    "Host-only dubbing is a separate review-and-render stage in host-dialogue.router.json; it replaces selected non-overlapping lines, not lip movements."
+  ],
+  "preprocessing": "Full original video. No fixed crop, box selection or rectangle composite for new jobs.",
+  "postprocessing": "Download the full provider output. Existing submitted legacy crop jobs retain their historical processing contract."
+}

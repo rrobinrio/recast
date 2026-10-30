@@ -1,0 +1,25 @@
+{
+  "name": "Reference voice cloning",
+  "model": "byteplus/seed-audio-1.0-multilingual",
+  "engine": "Comfy Router",
+  "implementation": "server/voices.ts",
+  "input": {
+    "text_prompt": "Use the voice in @Audio1. Speak the supplied script.",
+    "references": [
+      {
+        "audio_data": "BASE64_AUTHORIZED_RECORDING"
+      }
+    ],
+    "audio_config": {
+      "format": "mp3",
+      "sample_rate": 24000,
+      "enable_subtitle": true
+    }
+  },
+  "output": "Decode response audio (base64) to MP3; store privately.",
+  "limitations": [
+    "Recording under 30 seconds and 10 MB",
+    "Separate scripted speech, not automatic video dubbing",
+    "Requires speaker permission and result review"
+  ]
+}

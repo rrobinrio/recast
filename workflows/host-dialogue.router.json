@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "analysisModel": "vertexai/gemini-3.1-pro-preview",
+  "voiceModel": "byteplus/seed-audio-1.0-multilingual",
+  "implementation": "server/dubbing.ts and server/voices.ts",
+  "steps": ["Submit original video inline to Router with host description", "Persist request ID and poll status/get", "Review transcript, speaker labels and second-based timing", "Submit selected non-overlapping host lines with saved voice reference", "Tempo-fit cloned lines and mix over original soundtrack only in reviewed intervals", "Copy generated video stream without re-encoding; save a separate private dubbed result"],
+  "limitations": ["Manual dialogue review required", "Overlapping speech is not dubbed", "Ambient audio within replaced intervals is also replaced", "No lip synchronization", "Video duration must match source within 350 milliseconds", "Voice line fit is limited to one-third to three times playback speed"]
+}
+
