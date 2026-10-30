@@ -1,0 +1,20 @@
+import {test,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {comfy} from '@comfyorg/sdk';
+import {buildRequest,outputUrl,classifyError,MODEL} from '../server/pipeline.ts';
+test('provider policy rejection is terminal and does not invent its cause',()=>{const failure=classifyError({errorType:'content_policy_violation'});assert.equal(failure.retry,false);assert.match(failure.message,/No finished video/);assert.match(failure.message,/did not identify/);});
+test('Genjutsu uses native video and photo fields without sending voice',()=>{const input={source:'https://example.test/video',photos:['https://example.test/1','https://example.test/2','https://example.test/3'],voice:'private-voice',host:'Host on left',usage:'Social only',seed:123};const body=buildRequest(input);assert.equal(body.video_url,input.source);assert.deepEqual(body.image_urls,input.photos);assert.equal(body.resolution,'720p');assert.match(body.prompt,/original audio/);assert.ok(!JSON.stringify(body).includes('private-voice'));assert.equal(outputUrl({status:'completed',video:{url:'https://example.test/out'}}),'https://example.test/out');assert.throws(()=>outputUrl({status:'completed'}));assert.throws(()=>outputUrl({status:'nsfw'}));});
+test('insufficient credits is terminal and failed native output is not a success',()=>{assert.equal(classifyError({status:402}).retry,false);assert.match(classifyError({errorType:'insufficient_credits'}).message,/needs credits/);assert.throws(()=>outputUrl({status:'failed',error:{code:'invalid_input'}}));assert.throws(()=>outputUrl({status:'succeeded',content:{}}));assert.equal(outputUrl({status:'succeeded',content:{video_url:'https://example.test/video.mp4'}}),'https://example.test/video.mp4');});
+test('official SDK contract: submit, rebuild, queue states, Retry-After, result and finished error',async()=>{
+ let phase=0;let key='';let error=false;let submits=0;
+ const server=createServer(async(req,res)=>{res.setHeader('Content-Type','application/json');const base=`http://127.0.0.1:${(server.address() as any).port}/v2/models/${MODEL}/requests/test-request`;
+ if(req.method==='POST'){submits++;key=String(req.headers['idempotency-key']);for await(const _chunk of req){}res.statusCode=201;res.end(JSON.stringify({request_id:'test-request',status:'IN_QUEUE',queue_position:2,status_url:base+'/status',response_url:base,cancel_url:base+'/cancel'}));return;}
+ if(req.url?.endsWith('/status')){res.setHeader('Retry-After','7');res.end(JSON.stringify({request_id:'test-request',status:['IN_QUEUE','IN_PROGRESS','COMPLETED'][Math.min(phase++,2)],queue_position:2,...(error?{error_type:'insufficient_credits'}:{})}));return;}
+ if(error){res.statusCode=402;res.setHeader('X-Comfy-Error-Type','insufficient_credits');res.end(JSON.stringify({error:'insufficient_credits',message:'Add credits'}));return;}
+ res.end(JSON.stringify({status:'succeeded',content:{video_url:'https://example.test/result.mp4'}}));
+ });server.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));
+ try{comfy.config({credentials:'local-test-only',baseUrl:`http://127.0.0.1:${(server.address() as any).port}`});const handle=await comfy.models.submit(MODEL,{content:[]},{idempotencyKey:'persistent-test-key'});assert.equal(handle.requestId,'test-request');assert.equal(key,'persistent-test-key');const rebuilt=comfy.models.handle(MODEL,handle.requestId);const queued=await rebuilt.status();assert.equal(queued.status,'IN_QUEUE');assert.equal(queued.retryAfterMs,7000);assert.equal((await rebuilt.status()).status,'IN_PROGRESS');assert.equal((await rebuilt.status()).status,'COMPLETED');const result=await rebuilt.get();assert.equal(result.kind,'json');assert.equal(submits,1);error=true;assert.equal((await rebuilt.status()).errorType,'insufficient_credits');await assert.rejects(()=>rebuilt.get());}
+ finally{comfy.config({credentials:undefined,baseUrl:undefined});await new Promise<void>(r=>server.close(()=>r()));}
+});
+
